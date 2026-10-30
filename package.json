@@ -1,12 +1,36 @@
 {
   "name": "bonsai-bot",
-  "module": "index.ts",
+  "module": "src/index.ts",
   "type": "module",
   "private": true,
+  "workspaces": [
+    "database"
+  ],
+  "scripts": {
+    "start": "bun src/index.ts",
+    "dev": "bun --watch src/index.ts",
+    "deploy": "bun src/deploy-commands.ts",
+    "check-types": "tsc --noEmit",
+    "db:studio": "cd database && bunx prisma studio",
+    "db:generate": "cd database && bunx prisma generate",
+    "db:migrate:dev": "cd database && bunx prisma migrate dev",
+    "db:migrate:reset": "cd database && bunx prisma migrate reset --force"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/bun": "latest",
+    "@types/node": "^26.6.6",
+    "prisma": "^7.10.1"
   },
   "peerDependencies": {
     "typescript": "^7"
+  },
+  "dependencies": {
+    "@repo/database": "workspace:*",
+    "@prisma/adapter-better-sqlite3": "^7.10.1",
+    "@prisma/client": "7",
+    "discord.js": "^14.27.0",
+    "dotenv": "^18.0.9",
+    "pg": "^8.23.1"
   }
 }

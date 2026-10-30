@@ -1,15 +1,35 @@
-# bonsai-bot
+# Bonsai Bot
 
-To install dependencies:
+Discord-Bot mit [discord.js](https://discord.js.org) und [Bun](https://bun.com).
+
+## Setup
 
 ```bash
 bun install
+cp .env.example .env   # Token, Client-ID und (optional) Guild-ID eintragen
 ```
 
-To run:
+## Befehle
 
-```bash
-bun run index.ts
+| Script              | Beschreibung                               |
+| ------------------- | ------------------------------------------ |
+| `bun run deploy`    | Slash-Commands bei Discord registrieren    |
+| `bun run dev`       | Bot mit Auto-Reload starten                |
+| `bun start`         | Bot starten                                |
+| `bun run check-types` | TypeScript prüfen                        |
+
+## Struktur
+
+```
+src/
+  index.ts              Einstiegspunkt, Client + Handler
+  deploy-commands.ts    Registriert Slash-Commands
+  config.ts             Liest .env
+  loader.ts             Lädt Commands und Events automatisch
+  types.ts              Command- und Event-Typen
+  commands/<kategorie>/ Ein Slash-Command pro Datei
+  events/               Ein Event-Handler pro Datei
 ```
 
-This project was created using `bun init` in bun v1.4.2. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Neuen Command anlegen: Datei unter `src/commands/<kategorie>/` erstellen, die
+`{ data, execute } satisfies Command` exportiert, dann `bun run deploy`.
