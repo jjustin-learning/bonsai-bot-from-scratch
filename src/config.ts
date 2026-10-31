@@ -8,4 +8,5 @@ export const config = {
   token: required("DISCORD_TOKEN"),
   clientId: required("CLIENT_ID"),
   guildId: process.env.GUILD_ID,
+  birthdayChannelId: process.env.BIRTHDAY_CHANNEL_ID,
 };
