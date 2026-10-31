@@ -1,17 +1,11 @@
 import * as cheerio from "cheerio";
 import { prisma } from "@repo/database";
+import type { ScrapedShop } from "./types";
 
 const HEADERS = {
   "User-Agent":
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130 Safari/537.36",
   "Accept-Language": "de-DE",
-};
-
-type ScrapedShop = {
-  name: string;
-  description: string;
-  price: number | null;
-  releaseDate: string | null;
 };
 
 async function loadPage(url: string) {
@@ -50,6 +44,8 @@ async function scrapeSteam(url: string): Promise<ScrapedShop> {
   };
 }
 
+// -------------------------------------------------------> Instant Gaming
+
 async function scrapeInstantGaming(url: string): Promise<ScrapedShop> {
   const $ = await loadPage(url);
   const release = $(".subinfos .release").first().text().trim();
@@ -70,6 +66,8 @@ async function scrapeInstantGaming(url: string): Promise<ScrapedShop> {
       : null,
   };
 }
+
+// -------------------------------------------------------> Scrape Url
 
 export async function scrapeByGameUrl(
   steamUrl?: string | null,
@@ -123,6 +121,8 @@ export async function scrapeByGameUrl(
     },
   });
 }
+
+// -------------------------------------------------------> Update List
 
 export async function updateList() {
   const games = await prisma.game.findMany();

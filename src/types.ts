@@ -32,3 +32,10 @@ export type Game = {
   releaseDate: string | null;
   createdAt?: Date;
 };
+
+export type ScrapedShop = {
+  name: string;
+  description: string;
+  price: number | null;
+  releaseDate: string | null;
+};
