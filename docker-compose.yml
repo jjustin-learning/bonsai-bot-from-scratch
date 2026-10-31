@@ -14,6 +14,7 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: file:/app/data/data.db
+      TZ: Europe/Berlin
     volumes:
       - db-data:/app/data
     depends_on:

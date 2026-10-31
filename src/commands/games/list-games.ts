@@ -60,12 +60,12 @@ function formatGame(game: Game) {
 
 export default {
   data: new SlashCommandBuilder()
-    .setName("list")
+    .setName("list-games")
     .setDescription("Gibt die Liste aller gespeicherten Spiele aus."),
   async execute(interaction) {
     const games = await prisma.game.findMany();
     if (games.length === 0) {
-      await interaction.reply("Es sind noch keine Spiele gespeichert.");
+      await interaction.reply("❌ Es sind noch keine Spiele gespeichert.");
       return;
     }
 

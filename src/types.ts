@@ -39,3 +39,5 @@ export type ScrapedShop = {
   price: number | null;
   releaseDate: string | null;
 };
+
+export type BirthdayDate = { day: number; month: number; year: number | null };

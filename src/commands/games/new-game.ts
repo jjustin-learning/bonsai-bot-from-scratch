@@ -1,11 +1,11 @@
 import { MessageFlags, SlashCommandBuilder } from "discord.js";
 import type { Command } from "../../types.ts";
-import { prisma } from "@repo/database";
+import { scrapeByGameUrl } from "../../scraper.ts";
 
 export default {
   data: new SlashCommandBuilder()
-    .setName("remove")
-    .setDescription("Entfernt ein Spiel aus der Liste.")
+    .setName("new-game")
+    .setDescription("Fügt ein neues Spiel zur Liste hinzu.")
     .addStringOption((option) =>
       option
         .setName("steam_url")
@@ -14,13 +14,13 @@ export default {
     )
     .addStringOption((option) =>
       option
-        .setName("ig_url")
+        .setName("instant_gaming_url")
         .setDescription("Instant-Gaming-Link zum Spiel")
         .setRequired(false),
     ),
   async execute(interaction) {
     const steamUrl = interaction.options.getString("steam_url");
-    const igUrl = interaction.options.getString("ig_url");
+    const igUrl = interaction.options.getString("instant_gaming_url");
 
     if (!steamUrl && !igUrl) {
       await interaction.reply({
@@ -30,17 +30,15 @@ export default {
       return;
     }
 
-    const { count } = await prisma.game.deleteMany({
-      where: {
-        OR: [
-          ...(steamUrl ? [{ steamLink: steamUrl }] : []),
-          ...(igUrl ? [{ instantGamingLink: igUrl }] : []),
-        ],
-      },
-    });
+    await interaction.deferReply();
 
-    await interaction.reply(
-      count > 0 ? "Spiel entfernt." : "❌ Kein Spiel mit diesem Link gefunden.",
-    );
+    try {
+      await scrapeByGameUrl(steamUrl, igUrl);
+      await interaction.editReply("✅ Spiel hinzugefügt.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "❌ Unbekannter Fehler.";
+      await interaction.editReply(`❌ ${message}`);
+    }
   },
 } satisfies Command;
