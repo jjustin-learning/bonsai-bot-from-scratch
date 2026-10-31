@@ -16,15 +16,12 @@ model Game {
   id                 Int      @id @default(autoincrement())
   name               String
   description        String
-  // Optional (?), weil nicht jedes Spiel in beiden Shops verfügbar ist
   steamPrice         Float?
   instantGamingPrice Float?
   steam              String
   instantGaming      String
-  crossplay          Boolean
   steamLink          String?
   instantGamingLink  String?
-  // Gesetzt, solange das Spiel noch nicht erschienen ist (z. B. "März 2027")
   releaseDate        String?
   createdAt          DateTime @default(now())
 }

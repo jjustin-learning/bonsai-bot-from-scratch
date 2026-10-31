@@ -1,6 +1,4 @@
 services:
-  # SQLite hat keinen eigenen Server: Dieser Dienst bringt die Datenbank-Datei
-  # im Volume auf den neuesten Stand (Migrationen) und beendet sich dann.
   database:
     build: .
     command: >

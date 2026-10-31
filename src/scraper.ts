@@ -10,9 +10,7 @@ const HEADERS = {
 type ScrapedShop = {
   name: string;
   description: string;
-  // null, wenn das Spiel im Shop ausverkauft oder noch nicht erschienen ist
   price: number | null;
-  // Gesetzt, solange das Spiel noch nicht erschienen ist
   releaseDate: string | null;
 };
 
@@ -40,7 +38,6 @@ async function scrapeSteam(url: string): Promise<ScrapedShop> {
   const price =
     purchaseBox.find(".discount_final_price").first().text() ||
     purchaseBox.find(".game_purchase_price").first().text();
-  // Noch nicht erschienen und ohne Vorbestellung → kein Kaufbereich
   const comingSoon = !purchaseBox.length && $(".game_area_comingsoon").length;
 
   return {
@@ -55,7 +52,6 @@ async function scrapeSteam(url: string): Promise<ScrapedShop> {
 
 async function scrapeInstantGaming(url: string): Promise<ScrapedShop> {
   const $ = await loadPage(url);
-  // Statt "Auf Lager"/"Ausverkauft" steht bei unveröffentlichten Spielen "Release: …"
   const release = $(".subinfos .release").first().text().trim();
 
   return {
@@ -111,7 +107,6 @@ export async function scrapeByGameUrl(
 
   const name = steam?.name || instantGaming?.name || "";
   const description = steam?.description || instantGaming?.description || "";
-  // Steam hat meist das genauere Datum
   const releaseDate = steam?.releaseDate || instantGaming?.releaseDate || null;
 
   await prisma.game.create({
@@ -124,7 +119,6 @@ export async function scrapeByGameUrl(
       instantGaming: instantGaming ? "Instant Gaming" : "",
       steamLink: steamUrl || null,
       instantGamingLink: igUrl || null,
-      crossplay: false,
       releaseDate,
     },
   });
@@ -159,7 +153,6 @@ export async function updateList() {
     const name = steam?.name || instantGaming?.name || game.name;
     const description =
       steam?.description || instantGaming?.description || game.description;
-    // Shop nicht erreichbar → bisheriges Datum behalten
     const releaseDate =
       steam || instantGaming
         ? steam?.releaseDate || instantGaming?.releaseDate || null

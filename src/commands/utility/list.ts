@@ -32,7 +32,6 @@ function cheapestShop(game: Game) {
 
 function formatGame(game: Game) {
   const shop = cheapestShop(game);
-  // Kein Preis in irgendeinem Shop → noch nicht erschienen oder überall ausverkauft
   const unavailable = game.releaseDate
     ? `⏳ Noch nicht erschienen (Release: ${game.releaseDate})`
     : "❌ Ausverkauft";
@@ -41,7 +40,6 @@ function formatGame(game: Game) {
   const details = [
     shop && `🛒 ${shop.name}`,
     shop ? `💶 ${priceFormat.format(shop.price!)}` : unavailable,
-    game.crossplay ? "🔀 Crossplay" : null,
   ]
     .filter(Boolean)
     .join(" · ");
