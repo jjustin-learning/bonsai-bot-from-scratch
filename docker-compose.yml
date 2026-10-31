@@ -1,0 +1,24 @@
+services:
+  database:
+    build: .
+    command: >
+      sh -c "cd database && bunx --bun prisma migrate deploy --config prisma7.config.ts"
+    environment:
+      DATABASE_URL: file:/app/data/data.db
+    volumes:
+      - db-data:/app/data
+
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: file:/app/data/data.db
+    volumes:
+      - db-data:/app/data
+    depends_on:
+      database:
+        condition: service_completed_successfully
+
+volumes:
+  db-data:

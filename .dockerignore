@@ -1,0 +1,7 @@
+node_modules
+database/node_modules
+database/generated
+database/data.db
+.env
+database/.env
+.git
