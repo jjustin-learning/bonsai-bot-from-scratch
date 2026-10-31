@@ -30,5 +30,6 @@ export type Game = {
   steamLink: string | null;
   instantGamingLink: string | null;
   crossplay: boolean;
+  releaseDate: string | null;
   createdAt?: Date;
 };

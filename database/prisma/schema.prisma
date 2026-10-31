@@ -24,5 +24,7 @@ model Game {
   crossplay          Boolean
   steamLink          String?
   instantGamingLink  String?
+  // Gesetzt, solange das Spiel noch nicht erschienen ist (z. B. "März 2027")
+  releaseDate        String?
   createdAt          DateTime @default(now())
 }

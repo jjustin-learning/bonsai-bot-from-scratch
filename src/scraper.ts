@@ -10,7 +10,10 @@ const HEADERS = {
 type ScrapedShop = {
   name: string;
   description: string;
-  price: number;
+  // null, wenn das Spiel im Shop ausverkauft oder noch nicht erschienen ist
+  price: number | null;
+  // Gesetzt, solange das Spiel noch nicht erschienen ist
+  releaseDate: string | null;
 };
 
 async function loadPage(url: string) {
@@ -37,16 +40,23 @@ async function scrapeSteam(url: string): Promise<ScrapedShop> {
   const price =
     purchaseBox.find(".discount_final_price").first().text() ||
     purchaseBox.find(".game_purchase_price").first().text();
+  // Noch nicht erschienen und ohne Vorbestellung → kein Kaufbereich
+  const comingSoon = !purchaseBox.length && $(".game_area_comingsoon").length;
 
   return {
     name: $(".apphub_AppName").first().text().trim(),
     description: $(".game_description_snippet").first().text().trim(),
-    price: parsePrice(price),
+    price: comingSoon ? null : parsePrice(price),
+    releaseDate: comingSoon
+      ? $(".release_date .date").first().text().trim() || "unbekannt"
+      : null,
   };
 }
 
 async function scrapeInstantGaming(url: string): Promise<ScrapedShop> {
   const $ = await loadPage(url);
+  // Statt "Auf Lager"/"Ausverkauft" steht bei unveröffentlichten Spielen "Release: …"
+  const release = $(".subinfos .release").first().text().trim();
 
   return {
     name: $(".game-title")
@@ -55,7 +65,13 @@ async function scrapeInstantGaming(url: string): Promise<ScrapedShop> {
       .trim()
       .replace(/ - PC( \(.*\))?$/, ""),
     description: $('[itemprop="description"]').first().text().trim(),
-    price: parsePrice($(".total").first().text()),
+    price:
+      release || $(".subinfos .nostock").length
+        ? null
+        : parsePrice($(".total").first().text()),
+    releaseDate: release
+      ? release.replace(/^Release:\s*/, "") || "unbekannt"
+      : null,
   };
 }
 
@@ -95,6 +111,8 @@ export async function scrapeByGameUrl(
 
   const name = steam?.name || instantGaming?.name || "";
   const description = steam?.description || instantGaming?.description || "";
+  // Steam hat meist das genauere Datum
+  const releaseDate = steam?.releaseDate || instantGaming?.releaseDate || null;
 
   await prisma.game.create({
     data: {
@@ -107,6 +125,7 @@ export async function scrapeByGameUrl(
       steamLink: steamUrl || null,
       instantGamingLink: igUrl || null,
       crossplay: false,
+      releaseDate,
     },
   });
 }
@@ -140,6 +159,11 @@ export async function updateList() {
     const name = steam?.name || instantGaming?.name || game.name;
     const description =
       steam?.description || instantGaming?.description || game.description;
+    // Shop nicht erreichbar → bisheriges Datum behalten
+    const releaseDate =
+      steam || instantGaming
+        ? steam?.releaseDate || instantGaming?.releaseDate || null
+        : game.releaseDate;
 
     await prisma.game.update({
       where: { id: game.id },
@@ -148,6 +172,7 @@ export async function updateList() {
         description,
         steamPrice: steam?.price ?? null,
         instantGamingPrice: instantGaming?.price ?? null,
+        releaseDate,
       },
     });
   }
