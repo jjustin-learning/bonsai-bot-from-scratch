@@ -30,7 +30,6 @@ export default {
       return;
     }
 
-    // Schon ein übereinstimmender Link reicht, um das Spiel zu finden
     const { count } = await prisma.game.deleteMany({
       where: {
         OR: [

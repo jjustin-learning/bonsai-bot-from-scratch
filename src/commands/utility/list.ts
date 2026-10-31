@@ -7,7 +7,6 @@ const priceFormat = new Intl.NumberFormat("de-DE", {
   currency: "EUR",
 });
 
-// Discord-Limits: 1024 Zeichen pro Feld, 6000 Zeichen pro Embed
 const MAX_DESCRIPTION_LENGTH = 200;
 const MAX_GAMES = 10;
 
@@ -18,7 +17,6 @@ function shorten(text: string, maxLength: number) {
     : clean;
 }
 
-// Günstigster Shop des Spiels; Shops ohne Preis oder Link werden ignoriert
 function cheapestShop(game: Game) {
   const shops = [
     { name: "Steam", price: game.steamPrice, link: game.steamLink },

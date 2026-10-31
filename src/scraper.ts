@@ -15,11 +15,11 @@ type ScrapedShop = {
 
 async function loadPage(url: string) {
   const response = await fetch(url, { headers: HEADERS });
-  if (!response.ok) throw new Error(`Seite nicht erreichbar (HTTP ${response.status}).`);
+  if (!response.ok)
+    throw new Error(`Seite nicht erreichbar (HTTP ${response.status}).`);
   return cheerio.load(await response.text());
 }
 
-// "13,99€" → 13.99, "0,--€" → 0
 function parsePrice(text: string) {
   return parseFloat(
     text.replace("€", "").replace(",", ".").replace("--", "00").trim(),
@@ -31,7 +31,6 @@ function parsePrice(text: string) {
 async function scrapeSteam(url: string): Promise<ScrapedShop> {
   const $ = await loadPage(url);
 
-  // Erste Kaufbox des Spiels selbst – Demo-Boxen und Bundles überspringen
   const purchaseBox = $(
     ".game_area_purchase_game_wrapper:not(.dynamic_bundle_description) .game_area_purchase_game:not(.demo_above_purchase)",
   ).first();
@@ -46,27 +45,19 @@ async function scrapeSteam(url: string): Promise<ScrapedShop> {
   };
 }
 
-// -------------------------------------------------------> Instant Gaming
-
 async function scrapeInstantGaming(url: string): Promise<ScrapedShop> {
-  // Suchergebnisse werden per JavaScript nachgeladen und sind im HTML nicht enthalten
-  if (url.includes("/suche/") || url.includes("/search/")) {
-    throw new Error(
-      "Das ist ein Instant-Gaming-Suchlink. Bitte den Link zur Seite des Spiels angeben.",
-    );
-  }
-
   const $ = await loadPage(url);
 
   return {
-    // "PlateUp! - PC (Steam)" → "PlateUp!"
-    name: $(".game-title").first().text().trim().replace(/ - PC( \(.*\))?$/, ""),
+    name: $(".game-title")
+      .first()
+      .text()
+      .trim()
+      .replace(/ - PC( \(.*\))?$/, ""),
     description: $('[itemprop="description"]').first().text().trim(),
     price: parsePrice($(".total").first().text()),
   };
 }
-
-// -------------------------------------------------------> Prisma Call
 
 export async function scrapeByGameUrl(
   steamUrl?: string | null,
@@ -76,7 +67,6 @@ export async function scrapeByGameUrl(
     throw new Error("Kein Link angegeben.");
   }
 
-  // Schon ein übereinstimmender Link reicht, um ein Duplikat zu erkennen
   const existingGame = await prisma.game.findFirst({
     where: {
       OR: [
@@ -96,11 +86,13 @@ export async function scrapeByGameUrl(
   if (steam && (!steam.name || Number.isNaN(steam.price))) {
     throw new Error("Fehler beim Scrapen der Steam-Seite.");
   }
-  if (instantGaming && (!instantGaming.name || Number.isNaN(instantGaming.price))) {
+  if (
+    instantGaming &&
+    (!instantGaming.name || Number.isNaN(instantGaming.price))
+  ) {
     throw new Error("Fehler beim Scrapen der Instant-Gaming-Seite.");
   }
 
-  // Name und Beschreibung bevorzugt von Steam, sonst von Instant Gaming
   const name = steam?.name || instantGaming?.name || "";
   const description = steam?.description || instantGaming?.description || "";
 
@@ -117,4 +109,46 @@ export async function scrapeByGameUrl(
       crossplay: false,
     },
   });
+}
+
+export async function updateList() {
+  const games = await prisma.game.findMany();
+
+  for (const game of games) {
+    let steam: ScrapedShop | null = null;
+    let instantGaming: ScrapedShop | null = null;
+
+    if (game.steamLink) {
+      try {
+        steam = await scrapeSteam(game.steamLink);
+      } catch (error) {
+        console.error(`Fehler beim Scrapen von Steam für ${game.name}:`, error);
+      }
+    }
+
+    if (game.instantGamingLink) {
+      try {
+        instantGaming = await scrapeInstantGaming(game.instantGamingLink);
+      } catch (error) {
+        console.error(
+          `Fehler beim Scrapen von Instant Gaming für ${game.name}:`,
+          error,
+        );
+      }
+    }
+
+    const name = steam?.name || instantGaming?.name || game.name;
+    const description =
+      steam?.description || instantGaming?.description || game.description;
+
+    await prisma.game.update({
+      where: { id: game.id },
+      data: {
+        name,
+        description,
+        steamPrice: steam?.price ?? null,
+        instantGamingPrice: instantGaming?.price ?? null,
+      },
+    });
+  }
 }

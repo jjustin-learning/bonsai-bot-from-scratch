@@ -30,14 +30,12 @@ export default {
       return;
     }
 
-    // Scrapen dauert länger als die 3 Sekunden, die Discord für eine Antwort erlaubt
     await interaction.deferReply();
 
     try {
       await scrapeByGameUrl(steamUrl, igUrl);
       await interaction.editReply("Spiel hinzugefügt.");
     } catch (error) {
-      // Fehlermeldung aus dem Scraper direkt anzeigen, z. B. "Spiel bereits in der Liste."
       const message =
         error instanceof Error ? error.message : "Unbekannter Fehler.";
       await interaction.editReply(`❌ ${message}`);
