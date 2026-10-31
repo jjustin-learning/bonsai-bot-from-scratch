@@ -1,4 +1,3 @@
-import type { Platform } from "@repo/database";
 import type {
   ChatInputCommandInteraction,
   ClientEvents,
@@ -24,9 +23,12 @@ export interface Event<K extends keyof ClientEvents = keyof ClientEvents> {
 export type Game = {
   name: string;
   description: string;
-  price: number;
-  platform: Platform;
-  link: string;
+  steamPrice: number | null;
+  instantGamingPrice: number | null;
+  steam: string;
+  instantGaming: string;
+  steamLink: string | null;
+  instantGamingLink: string | null;
   crossplay: boolean;
   createdAt?: Date;
 };

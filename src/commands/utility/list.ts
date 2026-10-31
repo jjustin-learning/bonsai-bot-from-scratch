@@ -1,41 +1,59 @@
-import { EmbedBuilder, SlashCommandBuilder } from "discord.js";
-import { Platform } from "@repo/database";
-import { platformNames } from "../../constants.ts";
+import { EmbedBuilder, SlashCommandBuilder, time } from "discord.js";
+import { prisma } from "@repo/database";
 import type { Command, Game } from "../../types.ts";
-
-const games: Game[] = [
-  {
-    name: "Minecraft",
-    description:
-      "Ein Sandbox-Spiel, in dem Spieler in einer offenen Welt bauen und erkunden können.",
-    price: 26.95,
-    platform: Platform.INSTANT_GAMING,
-    crossplay: true,
-    link: "https://www.instant-gaming.com/de/442-kaufen-minecraft-java-bedrock-edition-pc/",
-  },
-];
 
 const priceFormat = new Intl.NumberFormat("de-DE", {
   style: "currency",
   currency: "EUR",
 });
 
+// Discord-Limits: 1024 Zeichen pro Feld, 6000 Zeichen pro Embed
+const MAX_DESCRIPTION_LENGTH = 200;
+const MAX_GAMES = 10;
+
+function shorten(text: string, maxLength: number) {
+  const clean = text.replace(/\s+/g, " ").trim();
+  return clean.length > maxLength
+    ? `${clean.slice(0, maxLength - 1).trimEnd()}…`
+    : clean;
+}
+
+// Günstigster Shop des Spiels; Shops ohne Preis oder Link werden ignoriert
+function cheapestShop(game: Game) {
+  const shops = [
+    { name: "Steam", price: game.steamPrice, link: game.steamLink },
+    {
+      name: "Instant Gaming",
+      price: game.instantGamingPrice,
+      link: game.instantGamingLink,
+    },
+  ].filter((shop) => shop.price !== null && shop.link);
+
+  return shops.sort((a, b) => a.price! - b.price!)[0];
+}
+
 function formatGame(game: Game) {
+  const shop = cheapestShop(game);
+
   const details = [
-    `🛒 ${platformNames[game.platform]}`,
-    `💶 ${priceFormat.format(game.price)}`,
+    shop && `🛒 ${shop.name}`,
+    shop && `💶 ${priceFormat.format(shop.price!)}`,
     game.crossplay ? "🔀 Crossplay" : null,
   ]
     .filter(Boolean)
     .join(" · ");
 
   return {
-    name: game.name,
+    name: shorten(game.name, 256),
     value: [
-      `> ${game.description}`,
+      `> ${shorten(game.description, MAX_DESCRIPTION_LENGTH)}`,
       details,
-      `[Zum Shop](${game.link})`,
-    ].join("\n"),
+      shop && `[Zum Shop](${shop.link})`,
+      game.createdAt && `📅 Hinzugefügt ${time(game.createdAt, "D")}`,
+      "​",
+    ]
+      .filter(Boolean)
+      .join("\n"),
   };
 }
 
@@ -44,6 +62,7 @@ export default {
     .setName("list")
     .setDescription("Gibt die Liste aller gespeicherten Spiele aus."),
   async execute(interaction) {
+    const games = await prisma.game.findMany();
     if (games.length === 0) {
       await interaction.reply("Es sind noch keine Spiele gespeichert.");
       return;
@@ -52,8 +71,13 @@ export default {
     const embed = new EmbedBuilder()
       .setTitle("🎮 Spieleliste")
       .setColor(0x57f287)
-      .addFields(games.slice(0, 25).map(formatGame))
-      .setFooter({ text: `${games.length} Spiel(e)` })
+      .addFields(games.slice(0, MAX_GAMES).map(formatGame))
+      .setFooter({
+        text:
+          games.length > MAX_GAMES
+            ? `${MAX_GAMES} von ${games.length} Spielen`
+            : `${games.length} Spiel(e)`,
+      })
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });
